@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KTXSTABLE-SERVER</title>
+  <meta name="description" content="Sistem server kontrol lisensi Brevent KTXSTABLE-SERVER: manajemen kunci lisensi, status ON/OFF, kontrol expired, total perangkat terpasang, dan integrasi shell script module Brevent by kitox.">
+  <meta property="og:title" content="KTXSTABLE-SERVER">
+  <meta property="og:description" content="Sistem server kontrol lisensi Brevent KTXSTABLE-SERVER: manajemen kunci lisensi, status ON/OFF, kontrol expired, total perangkat terpasang, dan integrasi shell script module Brevent by kitox.">
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background-color: rgb(9, 11, 16);
+      color: rgb(226, 232, 240);
+      min-height: 100vh;
+    }
+    code, pre, .font-mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgb(39, 39, 42);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgb(63, 63, 70);
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen selection:bg-amber-400 selection:text-black">
+
+  <!-- Toast Notification Pop-up -->
+  <div id="toast" class="fixed top-4 right-4 z-50 px-4 py-3 rounded-xl text-xs font-semibold hidden items-center gap-2.5 border shadow-2xl transition-all duration-200">
+    <span id="toast-icon"></span>
+    <span id="toast-text"></span>
+  </div>
+
+  <!-- TOPBAR HEADER -->
+  <header class="border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur sticky top-0 z-30">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-4">
+      
+      <!-- Brand Logo & Title -->
+      <div class="flex items-center gap-3 min-w-0">
+        <div class="w-9 h-9 rounded-xl bg-amber-400/10 border border-amber-400/30 flex items-center justify-center font-mono font-bold text-amber-400 text-sm shrink-0">
+          KX
+        </div>
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-mono font-bold text-sm sm:text-base tracking-wide text-white">KTXSTABLE-SERVER</span>
+            <span id="server-status-dot" class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" title="Server Aktif"></span>
+            <span id="server-status-tag" class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950/70 text-emerald-400 border border-emerald-800/60 hidden sm:inline-block">API ONLINE</span>
+          </div>
+          <p class="text-[11px] text-zinc-400 truncate">
+            Brevent Access Control Server • by <span class="text-amber-400 font-semibold">kitox</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2 shrink-0">
+        <button onclick="openScriptGeneratorModal()" class="px-3 py-2 rounded-lg bg-emerald-950/40 hover:bg-emerald-900/50 text-emerald-300 border border-emerald-700/60 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+          <span>Script Brevent</span>
+        </button>
+
+        <button onclick="openTesterModal()" class="px-3 py-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-white border border-zinc-700/80 text-xs font-medium flex items-center gap-1.5 transition-colors">
+          <svg class="w-3.5 h-3.5 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m10 2 6 6-6 6"/><path d="M4 14h12"/><path d="M4 22h16"/></svg>
+          <span class="hidden sm:inline">Tes API</span>
+        </button>
+
+        <button onclick="openCreateKeyModal()" class="px-3.5 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 shadow-sm">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Buat Key Baru</span>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- KONTEN UTAMA -->
+  <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+
+    <!-- STATS SUMMARY BAR -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-zinc-900/60 border border-zinc-800/80 rounded-xl px-4 py-3 text-xs">
+      <div class="flex items-center gap-4 text-zinc-400 flex-wrap">
+        <div>
+          Total Kunci: <strong id="stat-total-keys" class="text-white font-mono font-bold">0</strong>
+        </div>
+        <span>•</span>
+        <div>
+          Kunci Aktif (ON): <strong id="stat-active-keys" class="text-emerald-400 font-mono font-bold">0</strong>
+        </div>
+        <span>•</span>
+        <div>
+          Total HP Terhubung: <strong id="stat-total-devices" class="text-amber-400 font-mono font-bold">0</strong>
+        </div>
+        <span>•</span>
+        <div>
+          Device Dibanned: <strong id="stat-total-banned" class="text-rose-400 font-mono font-bold">0</strong>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <span class="text-zinc-500 text-[11px]">Database Server:</span>
+        <span id="storage-engine-label" class="font-mono text-emerald-400 text-[11px] font-semibold flex items-center gap-1">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+          <span>Real Backend Server (Node.js/Express)</span>
+        </span>
+      </div>
+    </div>
+
+    <!-- MAIN DYNAMIC CONTAINER -->
+    <div id="main-view-container">
+      <div class="py-12 text-center text-zinc-500 text-xs">
+        Memuat data kontrol server lisensi...
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="border-t border-zinc-800/80 py-4 bg-zinc-950 text-xs text-zinc-500 mt-auto">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-center sm:text-left">
+      <div class="flex items-center gap-2">
+        <span class="font-mono font-semibold text-zinc-300">KTXSTABLE-SERVER</span>
+        <span class="text-zinc-600">•</span>
+        <span>Akses Kontrol &amp; Server Lisensi Brevent Module</span>
+      </div>
+      <div class="font-mono text-[11px] text-zinc-400">
+        &copy; 2026 <strong class="text-amber-400 font-sans font-semibold">kitox</strong>. All rights reserved.
+      </div>
+    </div>
+  </footer>
+
+  <!-- MODAL: GENERATOR SCRIPT & MODULE BREVENT (SHELL SCRIPT .SH) -->
+  <div id="modal-script-generator" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-2xl p-5 sm:p-6 shadow-2xl relative space-y-4 max-h-[92vh] flex flex-col">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-800 shrink-0">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+            <span>Script / Module Shell Brevent</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-400 border border-emerald-800">Ready to Use</span>
+          </h2>
+          <p class="text-xs text-zinc-400 mt-0.5">Integrasikan kontrol key web ini langsung ke dalam shell script Android atau module Brevent.</p>
+        </div>
+        <button onclick="closeScriptGeneratorModal()" class="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-4 overflow-y-auto pr-1 text-xs">
+        
+        <!-- Pilihan Key untuk Script -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-zinc-300 font-medium mb-1">Pilih Kunci untuk Script:</label>
+            <select id="script-select-key" onchange="updateGeneratedScript()" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 font-mono text-xs focus:outline-none focus:border-amber-400">
+              <option value="">Pilih Key...</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-zinc-300 font-medium mb-1">URL Server yang Dipakai:</label>
+            <input id="script-server-url" type="text" oninput="updateGeneratedScript()" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 font-mono text-xs focus:outline-none focus:border-amber-400">
+          </div>
+        </div>
+
+        <!-- Cara 1: Satu Baris Perintah Langsung di Android -->
+        <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-amber-400">1. Jalankan Langsung via Terminal / Termux / Brevent Exec</span>
+            <button onclick="copyElementText('script-one-liner')" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-[11px]">Salin Perintah</button>
+          </div>
+          <p class="text-zinc-400 text-[11px]">Perintah ini akan mendownload script dan langsung memverifikasi status ON/OFF/EXPIRED ke server KTXSTABLE:</p>
+          <pre id="script-one-liner" class="p-2.5 rounded bg-zinc-900 border border-zinc-800/80 font-mono text-[11px] text-amber-300 select-all overflow-x-auto whitespace-pre-wrap"></pre>
+        </div>
+
+        <!-- Cara 2: Isi Lengkap Kode Shell Script .sh -->
+        <div class="bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="font-bold text-zinc-200">2. Kode Lengkap Shell Script (brevent_auth.sh)</span>
+            <div class="flex items-center gap-1.5">
+              <button onclick="downloadScriptFile()" class="px-2.5 py-1 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-200 font-mono text-[11px]">Unduh File .sh</button>
+              <button onclick="copyElementText('script-full-content')" class="px-2.5 py-1 rounded bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold text-[11px]">Salin Kode</button>
+            </div>
+          </div>
+          <p class="text-zinc-400 text-[11px]">Bisa disimpan ke dalam module Magisk/KernelSU pada path <code class="text-zinc-300">service.sh</code> atau dijalankan otomatis saat boot:</p>
+          <pre id="script-full-content" class="p-3 rounded bg-zinc-900 border border-zinc-800/80 font-mono text-[11px] text-zinc-300 max-h-56 overflow-y-auto whitespace-pre-wrap leading-relaxed select-all"></pre>
+        </div>
+
+        <!-- Info Respon API Brevent -->
+        <div class="bg-zinc-950/70 border border-zinc-800 rounded-xl p-3 space-y-1.5 text-[11px] text-zinc-400">
+          <div class="font-semibold text-zinc-200">Respon Server yang Diterima Script:</div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono">
+            <div class="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-emerald-400">SUCCESS: Akses OK</div>
+            <div class="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-rose-400">OFF: Kunci Dimatikan</div>
+            <div class="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-amber-400">EXPIRED: Masa Habis</div>
+            <div class="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-rose-400">DEVICE_BANNED: Dicekal</div>
+            <div class="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-purple-400">QUOTA_FULL: Kuota Penuh</div>
+            <div class="p-1.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">KEY_NOT_FOUND: Salah</div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- MODAL: BUAT KEY BARU (CUSTOM EXPIRED BEBAS KETIK) -->
+  <div id="modal-create-key" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-2xl relative space-y-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white">Buat Kunci Lisensi Baru</h2>
+          <p class="text-xs text-zinc-400 mt-0.5">Konfigurasi kode key, nama pemilik, status expired, dan batas HP.</p>
+        </div>
+        <button onclick="closeCreateKeyModal()" class="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form onsubmit="handleCreateKeySubmit(event)" class="space-y-4 text-xs">
+        
+        <!-- Kode Key -->
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Kode Kunci Lisensi</label>
+          <div class="flex gap-2">
+            <input id="input-key-code" type="text" placeholder="Ketik custom bebas, misal: VIP-01 / GAME-PRO" required class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 font-mono text-sm text-amber-400 font-bold focus:outline-none focus:border-amber-400 uppercase placeholder:normal-case placeholder-zinc-600">
+            <button type="button" onclick="generateRandomKey()" class="px-3 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 rounded-lg text-xs font-semibold shrink-0 transition-colors">
+              Acak KTX
+            </button>
+          </div>
+        </div>
+
+        <!-- Nama Pemilik -->
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Nama Pemilik / Keterangan</label>
+          <input id="input-key-owner" type="text" placeholder="Contoh: Customer 1 / Parda" required class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2.5 text-zinc-200 focus:outline-none focus:border-amber-400 placeholder-zinc-600">
+        </div>
+
+        <!-- Bagian Expired Custom -->
+        <div class="bg-zinc-950/70 border border-zinc-800/90 rounded-xl p-3.5 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="font-semibold text-zinc-200">Masa Berlaku / Expired (Ketik Bebas)</span>
+            <label class="flex items-center gap-1.5 cursor-pointer text-zinc-400 hover:text-zinc-200 select-none">
+              <input type="checkbox" id="check-lifetime" onchange="toggleLifetimeMode(this.checked)" class="rounded border-zinc-700 text-amber-400 focus:ring-0">
+              <span>Permanen (Lifetime)</span>
+            </label>
+          </div>
+
+          <!-- Input Expired Container -->
+          <div id="expired-inputs-container" class="space-y-2.5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              
+              <!-- Opsi Ketik Jumlah Hari -->
+              <div>
+                <span class="text-[11px] text-zinc-400 block mb-1">Ketik Berapa Hari:</span>
+                <div class="relative">
+                  <input id="input-custom-days" type="number" min="1" max="9999" value="30" oninput="syncExpiryFromDays(this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 font-mono font-bold focus:outline-none focus:border-amber-400">
+                  <span class="absolute right-3 top-2 text-zinc-500 font-sans">Hari</span>
+                </div>
+              </div>
+
+              <!-- Opsi Pilih Tanggal Langsung -->
+              <div>
+                <span class="text-[11px] text-zinc-400 block mb-1">Atau Pilih Tanggal Expired:</span>
+                <input id="input-custom-date" type="date" onchange="syncExpiryFromDate(this.value)" class="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 font-mono focus:outline-none focus:border-amber-400">
+              </div>
+
+            </div>
+
+            <!-- Tombol Preset Cepat -->
+            <div class="flex items-center gap-1.5 flex-wrap pt-1">
+              <span class="text-[10px] text-zinc-500">Preset:</span>
+              <button type="button" onclick="setPresetDays(1)" class="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]">1 Hari (Trial)</button>
+              <button type="button" onclick="setPresetDays(7)" class="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]">7 Hari</button>
+              <button type="button" onclick="setPresetDays(30)" class="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]">30 Hari</button>
+              <button type="button" onclick="setPresetDays(90)" class="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]">90 Hari</button>
+              <button type="button" onclick="setPresetDays(365)" class="px-2 py-0.5 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-[11px]">1 Tahun</button>
+            </div>
+
+            <!-- Preview Hasil Ketikan -->
+            <p id="preview-expiry-text" class="text-[11px] text-amber-400 font-mono pt-0.5">
+              Kadaluarsa pada: -
+            </p>
+          </div>
+        </div>
+
+        <!-- Batas Maksimal HP -->
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Batas Maksimal HP Terpasang (Ketik Jumlah)</label>
+          <div class="flex gap-2 items-center">
+            <input id="input-max-devices" type="number" min="0" max="1000" value="1" class="w-28 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 font-mono font-bold focus:outline-none focus:border-amber-400">
+            <span class="text-zinc-400 text-xs">(Ketik <code class="text-amber-400">0</code> jika ingin tanpa batas / unlimited)</span>
+          </div>
+        </div>
+
+        <div class="pt-2 flex items-center justify-end gap-2 border-t border-zinc-800">
+          <button type="button" onclick="closeCreateKeyModal()" class="px-3.5 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-semibold transition-colors">
+            Batal
+          </button>
+          <button type="submit" class="px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold transition-all active:scale-95">
+            Simpan ke Server
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: UBAH EXPIRED KUNCI -->
+  <div id="modal-edit-expiry" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-sm p-5 shadow-2xl relative space-y-3.5">
+      <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+        <h3 class="font-bold text-white text-xs sm:text-sm">Ubah Masa Aktif Key <span id="modal-edit-keyname" class="text-amber-400 font-mono"></span></h3>
+        <button onclick="closeEditExpiryModal()" class="p-1 rounded text-zinc-400 hover:text-white">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form onsubmit="handleEditExpirySubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-zinc-400 mb-1">Ketik Tanggal Kadaluarsa Baru:</label>
+          <input id="edit-custom-date" type="date" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-100 font-mono focus:outline-none focus:border-amber-400">
+        </div>
+
+        <div>
+          <label class="block text-zinc-400 mb-1">Atau Tambah Hari dari Sekarang:</label>
+          <div class="flex gap-1.5 flex-wrap">
+            <button type="button" onclick="setEditExpiryAddDays(7)" class="px-2 py-1 rounded bg-zinc-800 text-zinc-300 text-[11px]">+7 Hari</button>
+            <button type="button" onclick="setEditExpiryAddDays(30)" class="px-2 py-1 rounded bg-zinc-800 text-zinc-300 text-[11px]">+30 Hari</button>
+            <button type="button" onclick="setEditExpiryAddDays(90)" class="px-2 py-1 rounded bg-zinc-800 text-zinc-300 text-[11px]">+90 Hari</button>
+            <button type="button" onclick="setEditExpiryLifetime()" class="px-2 py-1 rounded bg-zinc-800 text-amber-400 text-[11px]">Jadikan Permanen</button>
+          </div>
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2 border-t border-zinc-800">
+          <button type="button" onclick="closeEditExpiryModal()" class="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 font-medium">Batal</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: BAN DEVICE MANUAL PADA KEY -->
+  <div id="modal-ban-device" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-5 shadow-2xl relative space-y-3.5">
+      <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+        <h3 class="font-bold text-white text-xs sm:text-sm">Ban Device Khusus Key <span id="ban-modal-key" class="text-amber-400 font-mono"></span></h3>
+        <button onclick="closeBanModal()" class="p-1 rounded text-zinc-400 hover:text-white">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form onsubmit="handleBanDeviceSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-zinc-300 mb-1 font-medium">Serial Number (SN) Perangkat</label>
+          <input id="input-ban-sn" type="text" placeholder="Contoh: R5CN80GHE1A" required class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 font-mono text-zinc-200 focus:outline-none focus:border-rose-400">
+        </div>
+
+        <div>
+          <label class="block text-zinc-300 mb-1 font-medium">Keterangan / Alasan Ban</label>
+          <input id="input-ban-reason" type="text" placeholder="Misal: Key disebar / Perangkat tidak dikenal" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-rose-400">
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2 border-t border-zinc-800">
+          <button type="button" onclick="closeBanModal()" class="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 font-medium">Batal</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold">Ban Device Ini</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: SAMBUNG / PASANG HP KE KEY -->
+  <div id="modal-connect-device" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-md p-5 shadow-2xl relative space-y-3.5">
+      <div class="flex items-center justify-between pb-2 border-b border-zinc-800">
+        <h3 class="font-bold text-white text-xs sm:text-sm">Pasang / Sambung HP ke Key <span id="connect-modal-key" class="text-amber-400 font-mono"></span></h3>
+        <button onclick="closeConnectModal()" class="p-1 rounded text-zinc-400 hover:text-white">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <form onsubmit="handleConnectDeviceSubmit(event)" class="space-y-3 text-xs">
+        <div>
+          <label class="block text-zinc-300 mb-1 font-medium">Serial Number (SN) HP</label>
+          <div class="flex gap-2">
+            <input id="input-connect-sn" type="text" placeholder="Contoh: R5CN8890K1" required class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 font-mono text-zinc-200 focus:outline-none focus:border-amber-400">
+            <button type="button" onclick="randomizeConnectSN()" class="px-2.5 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg font-mono text-[11px]">Acak SN</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-zinc-300 mb-1 font-medium">Nama Tipe HP (Opsional)</label>
+          <input id="input-connect-model" type="text" placeholder="Contoh: Poco F5 / Samsung S23" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-amber-400">
+        </div>
+
+        <div class="pt-2 flex justify-end gap-2 border-t border-zinc-800">
+          <button type="button" onclick="closeConnectModal()" class="px-3 py-1.5 rounded-lg bg-zinc-800 text-zinc-300 font-medium">Batal</button>
+          <button type="submit" class="px-4 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold">Kirim Permintaan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: TESTER API VERIFIKASI LANGSUNG -->
+  <div id="modal-tester" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl w-full max-w-lg p-5 sm:p-6 shadow-2xl relative space-y-4">
+      
+      <div class="flex items-center justify-between pb-3 border-b border-zinc-800">
+        <div>
+          <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+            <span>Uji Coba Endpoint Server API</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-mono bg-amber-400/10 text-amber-400 border border-amber-400/30">Live HTTP</span>
+          </h2>
+          <p class="text-xs text-zinc-400 mt-0.5">Tes bagaimana script shell Android Brevent menerima respon dari server ini.</p>
+        </div>
+        <button onclick="closeTesterModal()" class="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+
+      <div class="space-y-3.5 text-xs">
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Kode Kunci Lisensi</label>
+          <input id="tester-input-key" type="text" placeholder="Masukkan Kode Key" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 font-mono text-zinc-200 uppercase focus:outline-none focus:border-amber-400">
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Serial Number (SN) HP</label>
+          <div class="flex gap-2">
+            <input id="tester-input-sn" type="text" placeholder="Contoh: R5CN-99211" class="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 font-mono text-zinc-200 focus:outline-none focus:border-amber-400">
+            <button type="button" onclick="randomizeTesterSN()" class="px-2.5 py-1.5 bg-zinc-800 text-zinc-300 rounded-lg font-mono text-[11px]">Acak SN</button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block font-medium text-zinc-300 mb-1">Model Perangkat</label>
+          <input id="tester-input-model" type="text" placeholder="Contoh: Xiaomi 13 Pro" class="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-zinc-200 focus:outline-none focus:border-amber-400">
+        </div>
+
+        <div class="pt-1">
+          <button type="button" onclick="runLiveApiTest()" class="w-full py-2.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 font-bold transition-all active:scale-95 flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            <span>Kirim Request ke Server API</span>
+          </button>
+        </div>
+
+        <div id="tester-result-container" class="hidden bg-zinc-950 border border-zinc-800 rounded-xl p-3.5 space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-zinc-400">Respon Server:</span>
+            <span id="tester-result-badge" class="px-2 py-0.5 rounded font-mono font-bold"></span>
+          </div>
+          <pre id="tester-result-json" class="p-2.5 rounded-lg bg-zinc-900 border border-zinc-800/80 font-mono text-[11px] text-zinc-300 overflow-x-auto whitespace-pre-wrap leading-relaxed"></pre>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCRIPT LOGIKA UTAMA TERKONEKSI DENGAN SERVER API -->
+  <script>
+    let appState = {
+      keys: [],
+      selectedKeyId: null,
+      activeTab: 'connected',
+      searchQuery: '',
+      isServerLive: false
+    };
+
+    function showToast(text, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toast-text');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastText.innerText = text;
+      toastIcon.innerHTML = isError
+        ? '<svg class="w-4 h-4 text-rose-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+        : '<svg class="w-4 h-4 text-amber-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>';
+
+      toast.className = 'fixed top-4 right-4 z-50 px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 border bg-zinc-900 shadow-xl transition-all duration-200 ' + 
+        (isError ? 'border-rose-500/40 text-rose-300' : 'border-amber-400/40 text-zinc-100');
+
+      setTimeout(() => {
+        toast.classList.add('hidden');
+        toast.classList.remove('flex');
+      }, 3000);
+    }
+
+    function copyText(val) {
+      if (!val) return;
+      navigator.clipboard.writeText(val);
+      showToast('Tersalin: ' + val);
+    }
+
+    function copyElementText(elId) {
+      const el = document.getElementById(elId);
+      if (!el) return;
+      navigator.clipboard.writeText(el.innerText || el.textContent);
+      showToast('Teks berhasil disalin ke clipboard');
+    }
+
+    function formatDateDisplay(iso) {
+      if (!iso) return 'Permanen (Lifetime)';
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return '-';
+      return d.toLocaleDateString('id-ID', {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+
+    function getRemainingDays(iso) {
+      if (!iso) return 'Permanen (Lifetime)';
+      const diff = new Date(iso).getTime() - Date.now();
+      if (diff <= 0) return 'Kadaluarsa';
+      const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+      return days + ' hari lagi';
+    }
+
+    function isKeyExpired(expiresAt) {
+      if (!expiresAt) return false;
+      return new Date(expiresAt).getTime() < Date.now();
+    }
+
+    // Ambil data langsung dari Real Server API
+    async function fetchKeysFromServer() {
+      try {
+        const res = await fetch('/api/keys');
+        if (res.ok) {
+          const data = await res.json();
+          appState.keys = data.keys || [];
+          appState.isServerLive = true;
+          document.getElementById('server-status-dot').className = 'inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse';
+          document.getElementById('server-status-tag').innerText = 'API ONLINE';
+        } else {
+          appState.isServerLive = false;
+        }
+      } catch (err) {
+        appState.isServerLive = false;
+        document.getElementById('server-status-dot').className = 'inline-block w-2.5 h-2.5 rounded-full bg-amber-400';
+        document.getElementById('server-status-tag').innerText = 'OFFLINE MODE';
+      }
+      renderMain();
+    }
+
+    function updateStats() {
+      const keys = appState.keys || [];
+      const totalKeys = keys.length;
+      let totalDevices = 0;
+      let totalBanned = 0;
+      let activeKeys = 0;
+
+      keys.forEach(k => {
+        if (k.status === 'active' && !isKeyExpired(k.expiresAt)) {
+          activeKeys++;
+        }
+        totalDevices += (k.devices || []).length;
+        totalBanned += (k.bannedDevices || []).length;
+      });
+
+      document.getElementById('stat-total-keys').innerText = totalKeys;
+      document.getElementById('stat-active-keys').innerText = activeKeys;
+      document.getElementById('stat-total-devices').innerText = totalDevices;
+      document.getElementById('stat-total-banned').innerText = totalBanned;
+    }
+
+    function getFilteredKeys() {
+      const query = (appState.searchQuery || '').trim().toLowerCase();
+      if (!query) return appState.keys || [];
+      return (appState.keys || []).filter(k => 
+        (k.key && k.key.toLowerCase().includes(query)) ||
+        (k.name && k.name.toLowerCase().includes(query))
+      );
+    }
+
+    // Render Tampilan Utama
+    function renderMain() {
+      updateStats();
+      const container = document.getElementById('main-view-container');
+      const allKeys = appState.keys || [];
+
+      if (allKeys.length === 0) {
+        container.innerHTML = `
+          <div class="bg-zinc-900/40 border border-dashed border-zinc-800 rounded-2xl p-10 sm:p-14 text-center space-y-4">
+            <div class="w-12 h-12 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto text-amber-400">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/>
+              </svg>
+            </div>
+            <div class="max-w-md mx-auto">
+              <h2 class="text-base font-bold text-white">Database Kunci Lisensi Masih Kosong</h2>
+              <p class="text-xs text-zinc-400 mt-1">
+                Server backend berjalan dari 0 tanpa data dummy bawaan. Buat kunci lisensi pertama untuk mengontrol akses Brevent dari shell script Android Anda.
+              </p>
+            </div>
+            <div class="flex items-center justify-center gap-3 pt-2">
+              <button onclick="openCreateKeyModal()" class="px-4 py-2.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-zinc-950 text-xs font-bold transition-all shadow-sm">
+                + Buat Kunci Pertama
+              </button>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (!appState.selectedKeyId || !allKeys.some(k => k.id === appState.selectedKeyId)) {
+        appState.selectedKeyId = allKeys[0].id;
+      }
+
+      const filteredKeys = getFilteredKeys();
+      const activeKey = allKeys.find(k => k.id === appState.selectedKeyId) || allKeys[0];
+      const isOff = activeKey.status === 'banned';
+      const expired = isKeyExpired(activeKey.expiresAt);
+      const boundDevices = activeKey.devices || [];
+      const bannedDevices = activeKey.bannedDevices || [];
+      const logs = activeKey.logs || [];
+      const maxDevStr = activeKey.maxDevices === 0 ? 'Tanpa Batas (Unlimited)' : (activeKey.maxDevices + ' HP');
+      const currentTab = appState.activeTab || 'connected';
+
+      container.innerHTML = `
+        <div class="space-y-5">
+          
+          <!-- Bar Pemilih Kunci -->
+          <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-3 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <div class="flex items-center gap-2 overflow-x-auto py-1 max-w-full">
+              <span class="text-xs font-semibold text-zinc-400 shrink-0">Pilih Kunci:</span>
+              ${filteredKeys.map(k => {
+                const isSelected = k.id === appState.selectedKeyId;
+                const kIsOff = k.status === 'banned';
+                const kExpired = isKeyExpired(k.expiresAt);
+                let badgeClass = 'bg-emerald-400';
+                if (kIsOff) badgeClass = 'bg-rose-500';
+                else if (kExpired) badgeClass = 'bg-amber-500';
+
+                return `
+                  <button onclick="selectKey('${k.id}')" class="px-3 py-1.5 rounded-lg text-xs font-mono font-bold flex items-center gap-1.5 shrink-0 transition-all ${
+                    isSelected 
+                      ? 'bg-amber-400 text-zinc-950 shadow-sm' 
+                      : 'bg-zinc-950 hover:bg-zinc-800 text-zinc-300 border border-zinc-800'
+                  }">
+                    <span class="w-2 h-2 rounded-full ${badgeClass}"></span>
+                    <span>${k.key}</span>
+                    <span class="text-[10px] font-sans opacity-80">(${k.devices ? k.devices.length : 0} HP)</span>
+                  </button>
+                `;
+              }).join('')}
+              ${filteredKeys.length === 0 ? `
+                <span class="text-xs text-zinc-500 italic">Key tidak cocok dengan pencarian</span>
+              ` : ''}
+            </div>
+
+            <div class="flex items-center gap-2 shrink-0">
+              <input type="text" placeholder="Cari key / pemilik..." value="${appState.searchQuery || ''}" oninput="handleSearchKey(this.value)" class="bg-zinc-950 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-amber-400 w-36 sm:w-44">
+              <button onclick="openCreateKeyModal()" class="text-xs font-bold text-amber-400 hover:text-amber-300 py-1.5 px-2.5 rounded-lg bg-amber-400/10 border border-amber-400/20 shrink-0">
+                + Key Baru
+              </button>
+            </div>
+          </div>
+
+          <!-- Card Utama Detail Kunci dengan Switch ON/OFF -->
+          <div class="bg-zinc-900/80 border ${isOff ? 'border-rose-900/70' : 'border-zinc-800'} rounded-2xl p-5 sm:p-6 space-y-4">
+            
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-zinc-800">
+              <div>
+                <div class="flex items-center gap-3 flex-wrap">
+                  <span class="font-mono font-extrabold text-2xl sm:text-3xl ${isOff ? 'text-rose-400 line-through' : 'text-amber-400'}">
+                    ${activeKey.key}
+                  </span>
+                  <button onclick="copyText('${activeKey.key}')" class="p-1.5 text-zinc-400 hover:text-white rounded hover:bg-zinc-800" title="Salin Kode Key">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                  </button>
+
+                  <!-- Status ON / OFF Badge & Quick Switch -->
+                  ${isOff ? `
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/15 text-rose-400 border border-rose-500/40 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                      <span>STATUS: OFF (NONAKTIF / BANNED)</span>
+                    </span>
+                  ` : expired ? `
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-amber-500/15 text-amber-400 border border-amber-500/40 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                      <span>STATUS: KADALUARSA (EXPIRED)</span>
+                    </span>
+                  ` : `
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/40 flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>STATUS: ON (AKTIF BERJALAN)</span>
+                    </span>
+                  `}
+                </div>
+                <p class="text-xs text-zinc-400 mt-1">
+                  Pemilik: <strong class="text-zinc-200">${activeKey.name || '-'}</strong> • Dibuat: <span class="font-mono">${new Date(activeKey.createdAt).toLocaleDateString('id-ID')}</span>
+                </p>
+              </div>
+
+              <!-- Tombol Kontrol Server: ON/OFF Switch, Expired, Module Script, Hapus -->
+              <div class="flex items-center gap-2 flex-wrap">
+                
+                <!-- Switch ON / OFF Brevent -->
+                <button onclick="toggleServerKeyStatus('${activeKey.id}')" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 shadow-sm ${
+                  isOff 
+                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white ring-2 ring-emerald-400/30' 
+                    : 'bg-rose-600/90 hover:bg-rose-500 text-white'
+                }">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg>
+                  <span>${isOff ? 'Aktifkan (Set ON)' : 'Matikan (Set OFF / Ban)'}</span>
+                </button>
+
+                <button onclick="openEditExpiryModal('${activeKey.id}')" class="px-3 py-2 rounded-xl bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-medium">
+                  Ubah Expired
+                </button>
+
+                <button onclick="openScriptGeneratorForKey('${activeKey.key}')" class="px-3 py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-300 border border-emerald-700/60 text-xs font-bold flex items-center gap-1.5">
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                  <span>Ambil Script</span>
+                </button>
+
+                <button onclick="deleteKey('${activeKey.id}')" class="p-2.5 rounded-xl bg-zinc-950 hover:bg-rose-950/50 text-zinc-400 hover:text-rose-400 border border-zinc-800" title="Hapus Key">
+                  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Banner Peringatan jika Dimatikan / Expired -->
+            ${isOff ? `
+              <div class="p-3.5 rounded-xl bg-rose-950/40 border border-rose-800/60 text-xs text-rose-300 flex items-center gap-2.5">
+                <svg class="w-5 h-5 shrink-0 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div>
+                  <strong>KUNCI INI BERSTATUS NONAKTIF (OFF / BANNED):</strong>
+                  <p class="text-[11px] text-rose-400 mt-0.5">Semua script di HP Android yang mencoba memverifikasi kunci ini akan otomatis ditolak oleh server (Status: OFF). Klik 'Aktifkan (Set ON)' untuk mengizinkan akses kembali.</p>
+                </div>
+              </div>
+            ` : ''}
+
+            ${expired && !isOff ? `
+              <div class="p-3.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-xs text-amber-300 flex items-center gap-2.5">
+                <svg class="w-5 h-5 shrink-0 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div>
+                  <strong>MASA AKTIF TELAH HABIS (EXPIRED):</strong>
+                  <p class="text-[11px] text-amber-400 mt-0.5">Permintaan dari HP Android akan ditolak dengan kode 'EXPIRED'. Silakan klik 'Ubah Expired' untuk memperpanjang.</p>
+                </div>
+              </div>
+            ` : ''}
+
+            <!-- 3 Kotom Ringkasan -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800">
+                <span class="text-zinc-400 block text-[11px]">Masa Berlaku (Expired):</span>
+                <span class="font-bold text-white font-mono mt-0.5 block">${formatDateDisplay(activeKey.expiresAt)}</span>
+                <span class="text-[11px] text-amber-400 font-medium">${getRemainingDays(activeKey.expiresAt)}</span>
+              </div>
+
+              <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800">
+                <span class="text-zinc-400 block text-[11px]">Batas Maksimal HP:</span>
+                <span class="font-bold text-white font-mono mt-0.5 block">${maxDevStr}</span>
+                <span class="text-[11px] text-zinc-500">Kapasitas HP untuk key ini</span>
+              </div>
+
+              <div class="bg-zinc-950 p-3.5 rounded-xl border border-zinc-800">
+                <span class="text-zinc-400 block text-[11px]">HP Sedang Terhubung:</span>
+                <span class="font-bold text-amber-400 font-mono mt-0.5 block">${boundDevices.length} Perangkat</span>
+                <span class="text-[11px] text-zinc-500">Dicekal pada key ini: ${bannedDevices.length} Device</span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bagian Tab Detail Perangkat -->
+          <div class="space-y-3">
+            
+            <div class="flex items-center gap-2 border-b border-zinc-800 pb-2 text-xs flex-wrap">
+              <button onclick="switchTab('connected')" class="px-3.5 py-1.5 rounded-lg font-bold transition-colors ${
+                currentTab === 'connected' ? 'bg-amber-400 text-zinc-950' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+              }">
+                Total HP Terpasang (${boundDevices.length})
+              </button>
+
+              <button onclick="switchTab('banned')" class="px-3.5 py-1.5 rounded-lg font-bold transition-colors ${
+                currentTab === 'banned' ? 'bg-rose-600 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+              }">
+                Device Dibanned (${bannedDevices.length})
+              </button>
+
+              <button onclick="switchTab('logs')" class="px-3.5 py-1.5 rounded-lg font-bold transition-colors ${
+                currentTab === 'logs' ? 'bg-zinc-700 text-white' : 'bg-zinc-900 text-zinc-400 hover:text-zinc-200'
+              }">
+                Riwayat Log Server (${logs.length})
+              </button>
+            </div>
+
+            <!-- TAB 1: HP TERPASANG -->
+            ${currentTab === 'connected' ? `
+              <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 space-y-3">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <p class="text-xs text-zinc-400">
+                    Daftar perangkat Android yang telah memvalidasi kunci <strong class="text-amber-400 font-mono">${activeKey.key}</strong>.
+                  </p>
+                  <div class="flex items-center gap-2">
+                    ${boundDevices.length > 0 ? `
+                      <button onclick="resetKeyDevices('${activeKey.id}')" class="px-2.5 py-1 text-xs text-zinc-400 hover:text-rose-400 bg-zinc-950 border border-zinc-800 rounded-lg">
+                        Lepas Semua HP
+                      </button>
+                    ` : ''}
+                    <button onclick="openConnectModal('${activeKey.id}')" class="px-2.5 py-1 text-xs font-bold text-amber-400 hover:bg-amber-400/10 border border-amber-400/30 rounded-lg">
+                      + Sambungkan HP
+                    </button>
+                  </div>
+                </div>
+
+                ${boundDevices.length === 0 ? `
+                  <div class="py-8 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-lg">
+                    <p>Belum ada HP yang menjalankan script dengan key ini.</p>
+                    <p class="text-[11px] text-zinc-600 mt-0.5">Saat shell script di HP Android dijalankan, HP akan otomatis muncul di sini secara real-time.</p>
+                  </div>
+                ` : `
+                  <div class="space-y-2">
+                    ${boundDevices.map(d => `
+                      <div class="p-3 rounded-lg bg-zinc-950 border border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                        <div class="space-y-0.5">
+                          <div class="flex items-center gap-2">
+                            <span class="font-bold text-zinc-200">${d.model || 'Perangkat Android'}</span>
+                            <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-400 border border-emerald-800">TERHUBUNG</span>
+                          </div>
+                          <div class="text-[11px] text-zinc-400 font-mono flex items-center gap-2 flex-wrap">
+                            <span>SN: <strong class="text-amber-400">${d.serial}</strong></span>
+                            <span>•</span>
+                            <span class="text-zinc-500">Terakhir Akses: ${d.lastSeen || '-'}</span>
+                          </div>
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                          <button onclick="banDeviceFromBound('${activeKey.id}', '${d.serial}')" class="px-2.5 py-1 rounded bg-rose-950 text-rose-300 hover:bg-rose-900 border border-rose-800 text-xs font-semibold">
+                            Ban Device Ini
+                          </button>
+                          <button onclick="unbindDevice('${activeKey.id}', '${d.serial}')" class="px-2.5 py-1 rounded bg-zinc-800 text-zinc-300 hover:bg-zinc-700 text-xs">
+                            Lepas Ikatan
+                          </button>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                `}
+
+              </div>
+            ` : ''}
+
+            <!-- TAB 2: DEVICE DIBANNED -->
+            ${currentTab === 'banned' ? `
+              <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 space-y-3">
+                
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <p class="text-xs text-zinc-400">
+                    Device yang masuk daftar ini dicekal khusus pada key <strong class="text-amber-400 font-mono">${activeKey.key}</strong>.
+                  </p>
+                  <button onclick="openBanModal('${activeKey.id}')" class="px-2.5 py-1 text-xs font-bold text-rose-400 hover:bg-rose-400/10 border border-rose-400/30 rounded-lg">
+                    + Ban SN Manual
+                  </button>
+                </div>
+
+                ${bannedDevices.length === 0 ? `
+                  <div class="py-6 text-center text-zinc-500 text-xs border border-dashed border-zinc-800 rounded-lg">
+                    Tidak ada perangkat yang dibanned pada key ini.
+                  </div>
+                ` : `
+                  <div class="space-y-2">
+                    ${bannedDevices.map(b => `
+                      <div class="p-3 rounded-lg bg-rose-950/20 border border-rose-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs">
+                        <div>
+                          <div class="font-mono font-bold text-rose-300">SN: ${b.serial}</div>
+                          <p class="text-[11px] text-zinc-400 mt-0.5">Alasan: ${b.reason || 'Dicekal Admin'} (${b.bannedAt || '-'})</p>
+                        </div>
+
+                        <div>
+                          <button onclick="unbanDevice('${activeKey.id}', '${b.serial}')" class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs">
+                            Buka Ban (Unban)
+                          </button>
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                `}
+
+              </div>
+            ` : ''}
+
+            <!-- TAB 3: LOGS -->
+            ${currentTab === 'logs' ? `
+              <div class="bg-zinc-900/60 border border-zinc-800 rounded-xl p-4 space-y-2">
+                <div class="flex justify-between items-center text-xs">
+                  <span class="text-zinc-400">Riwayat Akses &amp; Audit Log Server:</span>
+                </div>
+
+                ${logs.length === 0 ? `
+                  <p class="text-xs text-zinc-500 py-3 text-center">Belum ada riwayat aktivitas log.</p>
+                ` : `
+                  <div class="space-y-1 max-h-56 overflow-y-auto pr-1">
+                    ${logs.map(l => `
+                      <div class="p-2 rounded bg-zinc-950 border border-zinc-800 font-mono text-[11px] flex justify-between gap-2">
+                        <span class="text-zinc-400">[${l.time}] ${l.message}</span>
+                        <span class="${l.status === 'ok' ? 'text-emerald-400' : 'text-rose-400'} font-bold shrink-0">${l.status === 'ok' ? 'OK' : 'DENIED'}</span>
+                      </div>
+                    `).join('')}
+                  </div>
+                `}
+              </div>
+            ` : ''}
+
+          </div>
+
+        </div>
+      `;
+    }
+
+    function selectKey(keyId) {
+      appState.selectedKeyId = keyId;
+      renderMain();
+    }
+
+    function switchTab(tab) {
+      appState.activeTab = tab;
+      renderMain();
+    }
+
+    function handleSearchKey(val) {
+      appState.searchQuery = val;
+      renderMain();
+    }
+
+    // Toggle ON / OFF Key ke Server
+    async function toggleServerKeyStatus(keyId) {
+      try {
+        const res = await fetch('/api/keys/' + encodeURIComponent(keyId) + '/toggle', {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (res.ok) {
+          const statusText = data.new_status === 'active' ? 'ON (Aktif)' : 'OFF (Dimatikan)';
+          showToast('Status key ' + keyId + ' diubah menjadi: ' + statusText, data.new_status !== 'active');
+          await fetchKeysFromServer();
+        } else {
+          showToast(data.message || 'Gagal mengubah status key', true);
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Hapus Key dari Server
+    async function deleteKey(keyId) {
+      if (!confirm('Hapus kunci lisensi "' + keyId + '" beserta seluruh data perangkatnya dari server?')) return;
+      try {
+        const res = await fetch('/api/keys/' + encodeURIComponent(keyId), {
+          method: 'DELETE'
+        });
+        if (res.ok) {
+          showToast('Kunci ' + keyId + ' berhasil dihapus dari server');
+          await fetchKeysFromServer();
+        } else {
+          showToast('Gagal menghapus key', true);
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Reset Semua HP
+    async function resetKeyDevices(keyId) {
+      if (!confirm('Lepas semua HP pada key "' + keyId + '"?')) return;
+      try {
+        const res = await fetch('/api/keys/' + encodeURIComponent(keyId) + '/reset-devices', {
+          method: 'POST'
+        });
+        if (res.ok) {
+          showToast('Semua HP pada key ' + keyId + ' telah dilepas');
+          await fetchKeysFromServer();
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Lepas 1 HP
+    async function unbindDevice(keyId, serial) {
+      try {
+        const res = await fetch('/api/keys/' + encodeURIComponent(keyId) + '/unbind-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serial: serial })
+        });
+        if (res.ok) {
+          showToast('HP (' + serial + ') dilepas dari key');
+          await fetchKeysFromServer();
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Ban Device
+    async function banDeviceFromBound(keyId, serial) {
+      if (!confirm('Ban HP ' + serial + ' agar tidak bisa memakai key ' + keyId + '?')) return;
+      try {
+        const res = await fetch('/api/keys/' + encodeURIComponent(keyId) + '/ban-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serial: serial, reason: 'Dibanned dari web server' })
+        });
+        if (res.ok) {
+          showToast('Device ' + serial + ' berhasil DIBANNED!', true);
+          await fetchKeysFromServer();
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Unban Device
+    async function unbanDevice(keyId, serial) {
+      try {
+        const res = await fetch('/api/keys/' + encodeURIComponent(keyId) + '/unban-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serial: serial })
+        });
+        if (res.ok) {
+          showToast('Device ' + serial + ' telah di-UNBAN');
+          await fetchKeysFromServer();
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Modal Buat Key
+    let isLifetimeMode = false;
+
+    function openCreateKeyModal() {
+      isLifetimeMode = false;
+      document.getElementById('check-lifetime').checked = false;
+      document.getElementById('expired-inputs-container').classList.remove('opacity-40', 'pointer-events-none');
+      document.getElementById('input-key-code').value = '';
+      document.getElementById('input-key-owner').value = '';
+      document.getElementById('input-custom-days').value = '30';
+      document.getElementById('input-max-devices').value = '1';
+      syncExpiryFromDays(30);
+
+      document.getElementById('modal-create-key').classList.remove('hidden');
+      document.getElementById('modal-create-key').classList.add('flex');
+      document.getElementById('input-key-code').focus();
+    }
+
+    function closeCreateKeyModal() {
+      document.getElementById('modal-create-key').classList.add('hidden');
+      document.getElementById('modal-create-key').classList.remove('flex');
+    }
+
+    function generateRandomKey() {
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      let p1 = '';
+      let p2 = '';
+      for (let i = 0; i < 4; i++) p1 += chars.charAt(Math.floor(Math.random() * chars.length));
+      for (let i = 0; i < 4; i++) p2 += chars.charAt(Math.floor(Math.random() * chars.length));
+      document.getElementById('input-key-code').value = 'KTX-' + p1 + '-' + p2;
+    }
+
+    function toggleLifetimeMode(checked) {
+      isLifetimeMode = checked;
+      const container = document.getElementById('expired-inputs-container');
+      const preview = document.getElementById('preview-expiry-text');
+      if (checked) {
+        container.classList.add('opacity-40', 'pointer-events-none');
+        preview.innerText = 'Kadaluarsa pada: Selamanya / Permanen (Tanpa batas waktu)';
+      } else {
+        container.classList.remove('opacity-40', 'pointer-events-none');
+        syncExpiryFromDays(document.getElementById('input-custom-days').value || 30);
+      }
+    }
+
+    function syncExpiryFromDays(days) {
+      if (isLifetimeMode) return;
+      const numDays = parseInt(days, 10);
+      if (isNaN(numDays) || numDays <= 0) return;
+
+      const target = new Date(Date.now() + numDays * 86400000);
+      const yyyy = target.getFullYear();
+      const mm = String(target.getMonth() + 1).padStart(2, '0');
+      const dd = String(target.getDate()).padStart(2, '0');
+      
+      document.getElementById('input-custom-date').value = yyyy + '-' + mm + '-' + dd;
+      document.getElementById('preview-expiry-text').innerText = 'Kadaluarsa pada: ' + formatDateDisplay(target.toISOString()) + ' (' + numDays + ' hari dari sekarang)';
+    }
+
+    function syncExpiryFromDate(dateStr) {
+      if (isLifetimeMode || !dateStr) return;
+      const target = new Date(dateStr + 'T23:59:59');
+      const diff = target.getTime() - Date.now();
+      const days = Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+      document.getElementById('input-custom-days').value = days;
+      document.getElementById('preview-expiry-text').innerText = 'Kadaluarsa pada: ' + formatDateDisplay(target.toISOString()) + ' (' + days + ' hari dari sekarang)';
+    }
+
+    function setPresetDays(d) {
+      document.getElementById('check-lifetime').checked = false;
+      toggleLifetimeMode(false);
+      document.getElementById('input-custom-days').value = d;
+      syncExpiryFromDays(d);
+    }
+
+    async function handleCreateKeySubmit(e) {
+      e.preventDefault();
+      const code = document.getElementById('input-key-code').value.trim().toUpperCase();
+      const owner = document.getElementById('input-key-owner').value.trim();
+      const maxDevices = parseInt(document.getElementById('input-max-devices').value, 10) || 0;
+
+      if (!code) return;
+
+      let expiresAt = null;
+      if (!isLifetimeMode) {
+        const dateInput = document.getElementById('input-custom-date').value;
+        if (dateInput) {
+          expiresAt = new Date(dateInput + 'T23:59:59').toISOString();
+        } else {
+          const days = parseInt(document.getElementById('input-custom-days').value, 10) || 30;
+          expiresAt = new Date(Date.now() + days * 86400000).toISOString();
+        }
+      }
+
+      try {
+        const res = await fetch('/api/keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: code,
+            name: owner,
+            expiresAt: expiresAt,
+            maxDevices: maxDevices
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeCreateKeyModal();
+          showToast('Kunci "' + code + '" berhasil disimpan ke server!');
+          appState.selectedKeyId = code;
+          await fetchKeysFromServer();
+        } else {
+          showToast(data.message || 'Gagal membuat key', true);
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Modal Ubah Expired
+    let editingKeyId = null;
+
+    function openEditExpiryModal(keyId) {
+      editingKeyId = keyId;
+      const k = appState.keys.find(item => item.id === keyId);
+      if (!k) return;
+
+      document.getElementById('modal-edit-keyname').innerText = k.key;
+      if (k.expiresAt) {
+        const d = new Date(k.expiresAt);
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        document.getElementById('edit-custom-date').value = yyyy + '-' + mm + '-' + dd;
+      } else {
+        document.getElementById('edit-custom-date').value = '';
+      }
+
+      document.getElementById('modal-edit-expiry').classList.remove('hidden');
+      document.getElementById('modal-edit-expiry').classList.add('flex');
+    }
+
+    function closeEditExpiryModal() {
+      document.getElementById('modal-edit-expiry').classList.add('hidden');
+      document.getElementById('modal-edit-expiry').classList.remove('flex');
+    }
+
+    function setEditExpiryAddDays(days) {
+      const target = new Date(Date.now() + days * 86400000);
+      const yyyy = target.getFullYear();
+      const mm = String(target.getMonth() + 1).padStart(2, '0');
+      const dd = String(target.getDate()).padStart(2, '0');
+      document.getElementById('edit-custom-date').value = yyyy + '-' + mm + '-' + dd;
+    }
+
+    function setEditExpiryLifetime() {
+      document.getElementById('edit-custom-date').value = '';
+    }
+
+    async function handleEditExpirySubmit(e) {
+      e.preventDefault();
+      if (!editingKeyId) return;
+
+      const dateVal = document.getElementById('edit-custom-date').value;
+      const expiresAt = dateVal ? new Date(dateVal + 'T23:59:59').toISOString() : null;
+
+      try {
+        const res = await fetch('/api/keys/' + encodeURIComponent(editingKeyId) + '/expired', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ expiresAt: expiresAt })
+        });
+        if (res.ok) {
+          closeEditExpiryModal();
+          showToast('Expired key ' + editingKeyId + ' berhasil diperbarui di server');
+          await fetchKeysFromServer();
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Modal Ban Manual
+    let banTargetKeyId = null;
+
+    function openBanModal(keyId) {
+      banTargetKeyId = keyId;
+      const k = appState.keys.find(item => item.id === keyId);
+      document.getElementById('ban-modal-key').innerText = k ? k.key : keyId;
+      document.getElementById('input-ban-sn').value = '';
+      document.getElementById('input-ban-reason').value = '';
+
+      document.getElementById('modal-ban-device').classList.remove('hidden');
+      document.getElementById('modal-ban-device').classList.add('flex');
+      document.getElementById('input-ban-sn').focus();
+    }
+
+    function closeBanModal() {
+      document.getElementById('modal-ban-device').classList.add('hidden');
+      document.getElementById('modal-ban-device').classList.remove('flex');
+    }
+
+    async function handleBanDeviceSubmit(e) {
+      e.preventDefault();
+      if (!banTargetKeyId) return;
+
+      const sn = document.getElementById('input-ban-sn').value.trim();
+      const reason = document.getElementById('input-ban-reason').value.trim() || 'Pencekalan manual Admin';
+      if (!sn) return;
+
+      try {
+        const res = await fetch('/api/keys/' + encodeURIComponent(banTargetKeyId) + '/ban-device', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ serial: sn, reason: reason })
+        });
+        if (res.ok) {
+          closeBanModal();
+          showToast('Device ' + sn + ' berhasil dibanned pada server!', true);
+          await fetchKeysFromServer();
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Modal Connect HP
+    let connectTargetKeyId = null;
+
+    function openConnectModal(keyId) {
+      connectTargetKeyId = keyId;
+      const k = appState.keys.find(item => item.id === keyId);
+      document.getElementById('connect-modal-key').innerText = k ? k.key : keyId;
+      document.getElementById('input-connect-sn').value = '';
+      document.getElementById('input-connect-model').value = '';
+
+      document.getElementById('modal-connect-device').classList.remove('hidden');
+      document.getElementById('modal-connect-device').classList.add('flex');
+      document.getElementById('input-connect-sn').focus();
+    }
+
+    function closeConnectModal() {
+      document.getElementById('modal-connect-device').classList.add('hidden');
+      document.getElementById('modal-connect-device').classList.remove('flex');
+    }
+
+    function randomizeConnectSN() {
+      const brands = ['R5CN', 'XIAOMI', 'POCO', 'VIVO', 'OPPO', 'SAMS'];
+      const prefix = brands[Math.floor(Math.random() * brands.length)];
+      const rand = Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('input-connect-sn').value = prefix + '-' + rand;
+    }
+
+    async function handleConnectDeviceSubmit(e) {
+      e.preventDefault();
+      if (!connectTargetKeyId) return;
+      const sn = document.getElementById('input-connect-sn').value.trim();
+      const model = document.getElementById('input-connect-model').value.trim() || 'Perangkat Android';
+
+      try {
+        const res = await fetch('/api/brevent/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            key: connectTargetKeyId,
+            sn: sn,
+            model: model
+          })
+        });
+        const data = await res.json();
+        if (res.ok) {
+          closeConnectModal();
+          showToast('HP (' + sn + ') berhasil tersambung ke server!');
+          await fetchKeysFromServer();
+        } else {
+          showToast('Ditolak: ' + (data.message || data.status), true);
+          await fetchKeysFromServer();
+        }
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Modal Generator Shell Script
+    function openScriptGeneratorModal() {
+      const select = document.getElementById('script-select-key');
+      select.innerHTML = '';
+      (appState.keys || []).forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k.key;
+        opt.text = k.key + ' (' + (k.name || 'No Owner') + ')';
+        select.appendChild(opt);
+      });
+
+      if (appState.selectedKeyId) {
+        select.value = appState.selectedKeyId;
+      }
+
+      document.getElementById('script-server-url').value = window.location.origin;
+      updateGeneratedScript();
+
+      document.getElementById('modal-script-generator').classList.remove('hidden');
+      document.getElementById('modal-script-generator').classList.add('flex');
+    }
+
+    function openScriptGeneratorForKey(keyCode) {
+      openScriptGeneratorModal();
+      document.getElementById('script-select-key').value = keyCode;
+      updateGeneratedScript();
+    }
+
+    function closeScriptGeneratorModal() {
+      document.getElementById('modal-script-generator').classList.add('hidden');
+      document.getElementById('modal-script-generator').classList.remove('flex');
+    }
+
+    function updateGeneratedScript() {
+      const selectedKey = document.getElementById('script-select-key').value || 'PASTE_KEY_ANDA';
+      const serverUrl = document.getElementById('script-server-url').value || window.location.origin;
+
+      document.getElementById('script-one-liner').innerText = 'curl -s "' + serverUrl + '/api/brevent/script?key=' + selectedKey + '" | sh';
+
+      const fullScript = `
+SERVER_URL="${serverUrl}"
+LICENSE_KEY="${selectedKey}"
+
+echo "==============================================="
+echo "   KTXSTABLE-SERVER - Brevent License Client   "
+echo "   Powered by kitox                            "
+echo "==============================================="
+
+DEVICE_SN=$(getprop ro.serialno 2>/dev/null)
+if [ -z "$DEVICE_SN" ] || [ "$DEVICE_SN" = "unknown" ]; then
+  DEVICE_SN=$(getprop ro.boot.serialno 2>/dev/null)
+fi
+if [ -z "$DEVICE_SN" ] || [ "$DEVICE_SN" = "unknown" ]; then
+  DEVICE_SN=$(settings get secure android_id 2>/dev/null)
+fi
+if [ -z "$DEVICE_SN" ]; then
+  DEVICE_SN="ANDROID-UNKNOWN-DEVICE"
+fi
+
+DEVICE_MODEL=$(getprop ro.product.model 2>/dev/null)
+if [ -z "$DEVICE_MODEL" ]; then
+  DEVICE_MODEL="Android-Device"
+fi
+
+echo "[*] Perangkat: $DEVICE_MODEL"
+echo "[*] Serial No: $DEVICE_SN"
+echo "[*] Memeriksa lisensi key: $LICENSE_KEY ..."
+
+VERIFY_URL="$SERVER_URL/api/brevent/check?key=$LICENSE_KEY&sn=$DEVICE_SN&model=$DEVICE_MODEL"
+
+STATUS=$(curl -s -m 8 "$VERIFY_URL" 2>/dev/null)
+
+if [ -z "$STATUS" ]; then
+  STATUS=$(wget -q -O - -T 8 "$VERIFY_URL" 2>/dev/null)
+fi
+
+echo "[*] Respons Server: $STATUS"
+
+case "$STATUS" in
+  "SUCCESS")
+    echo "[+] VALIDASI BERHASIL! Akses Brevent Diizinkan."
+    echo "[+] Menjalankan optimasi & layanan Brevent..."
+    brevent 2>/dev/null || true
+    exit 0
+    ;;
+  "OFF")
+    echo "[-] DITOLAK: Kunci akses sedang dimatikan (OFF/BANNED) oleh server."
+    exit 1
+    ;;
+  "EXPIRED")
+    echo "[-] DITOLAK: Masa aktif kunci lisensi Anda telah habis (EXPIRED)."
+    exit 1
+    ;;
+  "DEVICE_BANNED")
+    echo "[-] DITOLAK: Perangkat ini telah dibanned/dicekal pada kunci ini."
+    exit 1
+    ;;
+  "QUOTA_FULL")
+    echo "[-] DITOLAK: Kuota maksimal HP terpasang pada kunci ini sudah penuh."
+    exit 1
+    ;;
+  "KEY_NOT_FOUND")
+    echo "[-] DITOLAK: Kunci lisensi tidak ditemukan di server."
+    exit 1
+    ;;
+  *)
+    echo "[-] GAGAL: Tidak dapat terhubung ke server lisensi KTXSTABLE."
+    exit 1
+    ;;
+esac
+`;
+      document.getElementById('script-full-content').innerText = fullScript;
+    }
+
+    function downloadScriptFile() {
+      const content = document.getElementById('script-full-content').innerText;
+      const blob = new Blob([content], { type: 'text/x-sh' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'brevent_auth.sh';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      showToast('File brevent_auth.sh berhasil diunduh');
+    }
+
+    // Modal Live Tester
+    function openTesterModal() {
+      if (appState.selectedKeyId) {
+        document.getElementById('tester-input-key').value = appState.selectedKeyId;
+      }
+      randomizeTesterSN();
+      document.getElementById('tester-result-container').classList.add('hidden');
+      document.getElementById('modal-tester').classList.remove('hidden');
+      document.getElementById('modal-tester').classList.add('flex');
+    }
+
+    function closeTesterModal() {
+      document.getElementById('modal-tester').classList.add('hidden');
+      document.getElementById('modal-tester').classList.remove('flex');
+    }
+
+    function randomizeTesterSN() {
+      const brands = ['R5CN', 'XIAOMI', 'POCO', 'VIVO', 'OPPO', 'SAMS'];
+      const prefix = brands[Math.floor(Math.random() * brands.length)];
+      const rand = Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('tester-input-sn').value = prefix + '-' + rand;
+    }
+
+    async function runLiveApiTest() {
+      const keyCode = (document.getElementById('tester-input-key').value || '').trim().toUpperCase();
+      const sn = (document.getElementById('tester-input-sn').value || '').trim();
+      const model = (document.getElementById('tester-input-model').value || '').trim() || 'Tester Android';
+
+      if (!keyCode || !sn) {
+        showToast('Masukkan kode key dan serial number!', true);
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/brevent/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: keyCode, sn: sn, model: model })
+        });
+        const data = await res.json();
+
+        const resultContainer = document.getElementById('tester-result-container');
+        const badge = document.getElementById('tester-result-badge');
+        const jsonPre = document.getElementById('tester-result-json');
+
+        resultContainer.classList.remove('hidden');
+        if (res.ok && data.status === 'SUCCESS') {
+          badge.className = 'px-2 py-0.5 rounded font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+          badge.innerText = '200 OK - SUCCESS (ON)';
+        } else {
+          badge.className = 'px-2 py-0.5 rounded font-mono font-bold bg-rose-500/15 text-rose-400 border border-rose-500/30';
+          badge.innerText = res.status + ' ' + (data.status || 'DENIED');
+        }
+
+        jsonPre.innerText = JSON.stringify(data, null, 2);
+        await fetchKeysFromServer();
+      } catch (err) {
+        showToast('Gagal menghubungi server', true);
+      }
+    }
+
+    // Polling otomatis setiap 5 detik agar jika ada HP konek dari Android, web langsung update!
+    setInterval(() => {
+      fetchKeysFromServer();
+    }, 5000);
+
+    // Initial load
+    document.addEventListener('DOMContentLoaded', () => {
+      fetchKeysFromServer();
+    });
+  </script>
+</body>
+</html>
